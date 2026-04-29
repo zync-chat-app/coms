@@ -1,0 +1,28 @@
+# Environment & secrets
+.env
+*.env
+!.env.example
+
+# Build output
+bin/
+dist/
+
+# Data & logs
+data/
+logs/
+*.log
+*.log.gz
+*.db
+*.db-shm
+*.db-wal
+
+# Go
+*.test
+*.out
+vendor/
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+.DS_Store
