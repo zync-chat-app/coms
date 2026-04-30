@@ -15,11 +15,11 @@ import (
 )
 
 func main() {
-	fmt.Fprintln(os.Stderr, "🔑 Zync comS Key Generator")
-	fmt.Fprintln(os.Stderr, "──────────────────────────────────")
-	fmt.Fprintln(os.Stderr, "Add the output below to your .env file.")
-	fmt.Fprintln(os.Stderr, "Never commit SERVER_SECRET_KEY to version control.")
-	fmt.Fprintln(os.Stderr, "──────────────────────────────────")
+	fmt.Fprintln(os.Stdout, "🔑 Zync comS Key Generator")
+	fmt.Fprintln(os.Stdout, "──────────────────────────────────")
+	fmt.Fprintln(os.Stdout, "Add the output below to your .env file.")
+	fmt.Fprintln(os.Stdout, "Never commit SERVER_SECRET_KEY to version control.")
+	fmt.Fprintln(os.Stdout, "──────────────────────────────────")
 	fmt.Println()
 
 	pub, priv, err := ed25519.GenerateKey(rand.Reader)
@@ -33,5 +33,5 @@ func main() {
 	fmt.Printf("SERVER_PUBLIC_KEY=%s\n", hex.EncodeToString(pub))
 
 	fmt.Println()
-	fmt.Fprintln(os.Stderr, "✅ Done. Keep SERVER_SECRET_KEY secret!")
+	fmt.Fprintln(os.Stdout, "✅ Done. Keep SERVER_SECRET_KEY secret!")
 }
