@@ -1,10 +1,10 @@
 .PHONY: run build keygen clean lint
 
 run:
-	go run cmd/server/main.go
+	CGO_ENABLED=1 go run -tags "fts5" cmd/server/main.go
 
 build:
-	go build -ldflags="-s -w" -o bin/coms cmd/server/main.go
+	CGO_ENABLED=1 go build -tags "fts5" -ldflags="-s -w" -o bin/coms cmd/server/main.go
 
 keygen:
 	go run cmd/server/keygen.go
