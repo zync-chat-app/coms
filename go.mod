@@ -1,6 +1,6 @@
 module github.com/zync-chat-app/coms
 
-go 1.24.0
+go 1.25.0
 
 require (
 	aidanwoods.dev/go-paseto v1.6.0
@@ -15,7 +15,7 @@ require (
 
 require (
 	aidanwoods.dev/go-result v0.3.1 // indirect
-	go.uber.org/multierr v1.10.0 // indirect
-	golang.org/x/crypto v0.46.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+	golang.org/x/crypto v0.50.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
 )
