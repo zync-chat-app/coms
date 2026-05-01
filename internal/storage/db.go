@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -20,12 +21,12 @@ type DB struct {
 
 // Message is a stored message in a channel.
 type Message struct {
-	ID        uuid.UUID  `json:"id"`
-	ChannelID string     `json:"channel_id"`
-	UserID    uuid.UUID  `json:"user_id"`
-	Content   string     `json:"content"`
+	ID        uuid.UUID `json:"id"`
+	ChannelID string    `json:"channel_id"`
+	UserID    uuid.UUID `json:"user_id"`
+	Content   string    `json:"content"`
 	// Metadata: reactions, attachments, embeds etc. as JSON
-	Metadata  string     `json:"metadata"`
+	Metadata string `json:"metadata"`
 	// Edit history: JSON array of previous content versions
 	EditHistory []string `json:"edit_history,omitempty"`
 	// Soft-delete: content is cleared but entry remains for log chain
@@ -40,16 +41,16 @@ type Message struct {
 
 // Channel is a registered channel on this comS.
 type Channel struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Type        string    `json:"type"` // "text" | "announcement" | "forum"
-	Topic       string    `json:"topic,omitempty"`
-	IsReadOnly  bool      `json:"is_read_only"`
-	Position    int       `json:"position"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID         string    `json:"id"`
+	Name       string    `json:"name"`
+	Type       string    `json:"type"` // "text" | "announcement" | "forum"
+	Topic      string    `json:"topic,omitempty"`
+	IsReadOnly bool      `json:"is_read_only"`
+	Position   int       `json:"position"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
-// Open initialises the SQLite database, creating the file and schema if needed.
+// Open initializes the SQLite database, creating the file and schema if needed.
 func Open(path string) (*DB, error) {
 	// Ensure parent directory exists
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
@@ -182,12 +183,17 @@ func (db *DB) UpsertChannel(ctx context.Context, ch *Channel) error {
 func (db *DB) ListChannels(ctx context.Context) ([]*Channel, error) {
 	rows, err := db.sql.QueryContext(ctx, `
 		SELECT id, name, type, topic, is_read_only, position, created_at
-		FROM channels ORDER BY position ASC
+		FROM channels ORDER BY position -- ASC is the default ordering
 	`)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			// Error handling here
+		}
+	}(rows)
 
 	var channels []*Channel
 	for rows.Next() {
@@ -253,7 +259,12 @@ func (db *DB) GetHistory(ctx context.Context, channelID string, limit int, befor
 	if err != nil {
 		return nil, fmt.Errorf("get history: %w", err)
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			// Error handling here
+		}
+	}(rows)
 
 	var messages []*Message
 	for rows.Next() {
@@ -273,7 +284,12 @@ func (db *DB) EditMessage(ctx context.Context, messageID uuid.UUID, userID uuid.
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func(tx *sql.Tx) {
+		err := tx.Rollback()
+		if err != nil {
+			// Error handling here
+		}
+	}(tx)
 
 	// Get current content for history
 	var oldContent string
@@ -282,7 +298,7 @@ func (db *DB) EditMessage(ctx context.Context, messageID uuid.UUID, userID uuid.
 		`SELECT content, edit_history FROM messages WHERE id = ? AND user_id = ? AND deleted_at IS NULL`,
 		messageID.String(), userID.String(),
 	).Scan(&oldContent, &editHistoryJSON)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("message not found or not owned by user")
 	}
 	if err != nil {
@@ -347,7 +363,12 @@ func (db *DB) Search(ctx context.Context, channelID, query string, limit int) ([
 	if err != nil {
 		return nil, fmt.Errorf("search messages: %w", err)
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			// Error handling here
+		}
+	}(rows)
 
 	var messages []*Message
 	for rows.Next() {
@@ -399,7 +420,7 @@ func (db *DB) GetLastChainEntry(ctx context.Context) (idx uint64, hash []byte, e
 	err = db.sql.QueryRowContext(ctx, `
 		SELECT idx, hash FROM log_chain ORDER BY idx DESC LIMIT 1
 	`).Scan(&idx, &hash)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return 0, make([]byte, 32), nil
 	}
 	return
