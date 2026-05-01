@@ -43,11 +43,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Changed defer logger.L.Sync() to this other function to handle the possible returned error
+	// Defer logger sync with graceful handling of stdout/stderr sync errors
+	// (attempting to sync stdout/stderr returns "invalid argument" on Unix systems)
 	defer func(L *zap.Logger) {
 		err := L.Sync()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Sync error: %v\n", err) // This can be changed if need be
+			// Ignore "sync /dev/stdout: invalid argument" errors — this is expected
+			// when the logger writes to stdout/stderr, as these special files don't support sync
+			if err.Error() != "sync /dev/stdout: invalid argument" &&
+				err.Error() != "sync /dev/stderr: invalid argument" {
+				fmt.Fprintf(os.Stderr, "Logger sync error: %v\n", err)
+			}
 		}
 	}(logger.L)
 
