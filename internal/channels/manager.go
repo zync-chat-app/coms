@@ -16,7 +16,7 @@ import (
 
 const (
 	maxMessageLength = 4000 // characters
-	maxHistoryLimit  = 100
+	maxHistoryLimit  = 100  // Maybe make this configurable in the future?
 )
 
 // Manager handles all channel operations and registers WebSocket handlers.
@@ -44,14 +44,14 @@ func (m *Manager) RegisterChannel(ctx context.Context, ch *storage.Channel) erro
 // ─── Handler Registration ─────────────────────────────────────────────────────
 
 func (m *Manager) registerHandlers() {
-	m.hub.Register("zync.channels.list",            m.handleList)
-	m.hub.Register("zync.channels.message.create",  m.handleCreate)
+	m.hub.Register("zync.channels.list", m.handleList)
+	m.hub.Register("zync.channels.message.create", m.handleCreate)
 	m.hub.Register("zync.channels.message.history", m.handleHistory)
-	m.hub.Register("zync.channels.message.edit",    m.handleEdit)
-	m.hub.Register("zync.channels.message.delete",  m.handleDelete)
-	m.hub.Register("zync.channels.search",          m.handleSearch)
-	m.hub.Register("zync.channels.typing.start",    m.handleTypingStart)
-	m.hub.Register("zync.channels.typing.stop",     m.handleTypingStop)
+	m.hub.Register("zync.channels.message.edit", m.handleEdit)
+	m.hub.Register("zync.channels.message.delete", m.handleDelete)
+	m.hub.Register("zync.channels.search", m.handleSearch)
+	m.hub.Register("zync.channels.typing.start", m.handleTypingStart)
+	m.hub.Register("zync.channels.typing.stop", m.handleTypingStop)
 }
 
 // ─── Handlers ─────────────────────────────────────────────────────────────────

@@ -35,7 +35,7 @@ type CentralConfig struct {
 	// Base URL of the Zync Central server
 	BaseURL string // e.g. "https://central.zync.app" or "http://localhost:8080"
 	// API key issued by Central when this server was registered
-	APIKey  string
+	APIKey string
 	// Zync Central's Ed25519 public key — used to verify scoped tokens offline
 	PublicKeyHex string
 }
@@ -56,7 +56,7 @@ type StorageConfig struct {
 
 type FeatureConfig struct {
 	// Which built-in channel types to enable
-	EnableTextChannels        bool
+	EnableTextChannels         bool
 	EnableAnnouncementChannels bool
 	// Whether to enforce the log chain (required for Verified servers)
 	EnableLogChain bool
@@ -116,10 +116,10 @@ func (c *Config) Validate() error {
 	}
 
 	required := []check{
-		{c.ServerID,            "SERVER_ID"},
-		{c.Central.BaseURL,     "CENTRAL_URL"},
-		{c.Central.APIKey,      "CENTRAL_API_KEY"},
-		{c.Central.PublicKeyHex,"CENTRAL_PUBLIC_KEY"},
+		{c.ServerID, "SERVER_ID"},
+		{c.Central.BaseURL, "CENTRAL_URL"},
+		{c.Central.APIKey, "CENTRAL_API_KEY"},
+		{c.Central.PublicKeyHex, "CENTRAL_PUBLIC_KEY"},
 		{c.Crypto.SecretKeyHex, "SERVER_SECRET_KEY"},
 		{c.Crypto.PublicKeyHex, "SERVER_PUBLIC_KEY"},
 	}
@@ -174,5 +174,6 @@ func getEnvBool(key string, def bool) bool {
 	return b
 }
 
-// Validate returns a combined error if any required fields are missing.
+// ErrMissingConfig Validate returns a combined error if any required fields are missing.
+// This isn't used, so why is it here?
 var ErrMissingConfig = errors.New("missing required configuration")

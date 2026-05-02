@@ -5,7 +5,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"aidanwoods.dev/go-paseto"
@@ -25,9 +27,9 @@ type Client struct {
 
 // ScopedTokenClaims are the claims extracted from a user's scoped token.
 type ScopedTokenClaims struct {
-	UserID   uuid.UUID
-	ServerID uuid.UUID
-	IssuedAt time.Time
+	UserID    uuid.UUID
+	ServerID  uuid.UUID
+	IssuedAt  time.Time
 	ExpiresAt time.Time
 }
 
@@ -43,9 +45,9 @@ func New(cfg *config.Config) (*Client, error) {
 	}
 
 	return &Client{
-		cfg:  cfg,
-		http: &http.Client{Timeout: 10 * time.Second},
-		log:  logger.Named("CENTRAL"),
+		cfg:    cfg,
+		http:   &http.Client{Timeout: 10 * time.Second},
+		log:    logger.Named("CENTRAL"),
 		pubKey: pubKey,
 	}, nil
 }
@@ -110,8 +112,7 @@ func (c *Client) SendHeartbeat(ctx context.Context, softwareVersion string) erro
 		c.cfg.Central.BaseURL, c.cfg.ServerID)
 
 	body := fmt.Sprintf(`{"software_version":"%s"}`, softwareVersion)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url,
-		newStringReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(body)) // There's no need for a custom string reader
 	if err != nil {
 		return fmt.Errorf("build heartbeat request: %w", err)
 	}
@@ -123,7 +124,12 @@ func (c *Client) SendHeartbeat(ctx context.Context, softwareVersion string) erro
 	if err != nil {
 		return fmt.Errorf("send heartbeat: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			// Error handling here
+		}
+	}(resp.Body)
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		return errors.New("heartbeat rejected: invalid or revoked API key")
@@ -161,22 +167,4 @@ func (c *Client) RunHeartbeat(ctx context.Context, version string) {
 			}
 		}
 	}
-}
-
-// ─── Helper ───────────────────────────────────────────────────────────────────
-
-type stringReader struct {
-	s   string
-	pos int
-}
-
-func newStringReader(s string) *stringReader { return &stringReader{s: s} }
-
-func (r *stringReader) Read(p []byte) (int, error) {
-	if r.pos >= len(r.s) {
-		return 0, fmt.Errorf("EOF")
-	}
-	n := copy(p, r.s[r.pos:])
-	r.pos += n
-	return n, nil
 }

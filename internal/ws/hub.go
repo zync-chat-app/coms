@@ -27,6 +27,7 @@ type Message struct {
 // Returns a response message (or nil if no response needed) and an error.
 type MessageHandler func(ctx context.Context, client *Client, msg *Message) (*Message, error)
 
+// What is this supposed to be?
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  4096,
 	WriteBufferSize: 4096,
@@ -41,7 +42,7 @@ var upgrader = websocket.Upgrader{
 // Hub manages all active WebSocket connections.
 type Hub struct {
 	mu       sync.RWMutex
-	clients  map[uuid.UUID]*Client  // userID → client
+	clients  map[uuid.UUID]*Client // userID → client
 	handlers map[string]MessageHandler
 	log      *zap.Logger
 }
@@ -133,15 +134,20 @@ func (h *Hub) removeClient(c *Client) {
 	h.mu.Unlock()
 }
 
+// dispatch routes an incoming WebSocket message to the registered handler
+// for the message type and takes care of common error handling and replies
 func (h *Hub) dispatch(ctx context.Context, client *Client, msg *Message) {
+	// Looks up a MessageHandler by the message type (msg.T).
 	handler, ok := h.handlers[msg.T]
+
+	// If no handler is registered, sends a "zync.core.error" message back to the client indicating an unknown message type
 	if !ok {
 		// Unknown message type — send error back to client only
 		client.sendJSON(&Message{
 			T:  "zync.core.error",
 			ID: newMsgID(),
 			TS: nowMS(),
-			D:  mustJSON(map[string]string{
+			D: mustJSON(map[string]string{
 				"code":    "unknown_message_type",
 				"message": "Unknown message type: " + msg.T,
 				"ref":     msg.ID,
@@ -150,6 +156,8 @@ func (h *Hub) dispatch(ctx context.Context, client *Client, msg *Message) {
 		return
 	}
 
+	// If the handler returns an error, logs a warning (including message type and user id) and sends a "zync.core.error" back
+	// to the client with the handler error details. The function doesn't propagate the error
 	resp, err := handler(ctx, client, msg)
 	if err != nil {
 		h.log.Warn("handler error",
@@ -161,7 +169,7 @@ func (h *Hub) dispatch(ctx context.Context, client *Client, msg *Message) {
 			T:  "zync.core.error",
 			ID: newMsgID(),
 			TS: nowMS(),
-			D:  mustJSON(map[string]string{
+			D: mustJSON(map[string]string{
 				"code":    "handler_error",
 				"message": err.Error(),
 				"ref":     msg.ID,
@@ -170,6 +178,7 @@ func (h *Hub) dispatch(ctx context.Context, client *Client, msg *Message) {
 		return
 	}
 
+	// If the handler returns a non-nil response message, that response is sent back to the client
 	if resp != nil {
 		client.sendJSON(resp)
 	}
@@ -220,10 +229,10 @@ func (h *Hub) ServeWS(centralClient *central.Client, maxConnections int) http.Ha
 			T:  "zync.core.hello",
 			ID: newMsgID(),
 			TS: nowMS(),
-			D:  mustJSON(map[string]any{
-				"user_id":    claims.UserID,
+			D: mustJSON(map[string]any{
+				"user_id":            claims.UserID,
 				"session_expires_at": claims.ExpiresAt,
-				"online_count": h.OnlineCount(),
+				"online_count":       h.OnlineCount(),
 			}),
 		})
 
@@ -264,7 +273,7 @@ const (
 	writeWait      = 10 * time.Second
 	pongWait       = 60 * time.Second
 	pingPeriod     = 50 * time.Second // must be < pongWait
-	maxMessageSize = 16 * 1024        // 16 KB per message
+	maxMessageSize = 16384            // 16 KB per message. Placing a multiplication wastes CPU cycles, use the actual value in bytes instead
 )
 
 // Client represents a single WebSocket connection.
@@ -286,12 +295,17 @@ func newClient(conn *websocket.Conn, userID uuid.UUID, hub *Hub) *Client {
 
 // readPump reads incoming messages from the WebSocket connection.
 func (c *Client) readPump(ctx context.Context, hub *Hub) {
-	defer c.conn.Close()
+	defer func(conn *websocket.Conn) { // Changed for better error handling
+		err := conn.Close()
+		if err != nil {
+
+		}
+	}(c.conn)
 
 	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.conn.SetReadDeadline(time.Now().Add(pongWait)) // This can return an error
 	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		c.conn.SetReadDeadline(time.Now().Add(pongWait)) // This can also return an error. Consider handling it
 		return nil
 	})
 
@@ -332,7 +346,7 @@ func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		c.conn.Close()
+		c.conn.Close() // Cloing the connection can raise errors
 	}()
 
 	for {

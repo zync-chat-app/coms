@@ -17,17 +17,17 @@ import (
 // Each entry commits to the previous one — tampering breaks the chain.
 type Entry struct {
 	// Sequential index — gaps indicate deletion attempts
-	Index    uint64    `json:"index"`
+	Index uint64 `json:"index"`
 	// UUIDv7 of the message this log entry covers
 	MessageID uuid.UUID `json:"message_id"`
 	// Unix milliseconds — from the message, not the log system
-	Timestamp int64     `json:"timestamp"`
+	Timestamp int64 `json:"timestamp"`
 	// SHA-256 of the previous entry's hash — links the chain
-	PrevHash []byte    `json:"prev_hash"`
+	PrevHash []byte `json:"prev_hash"`
 	// SHA-256(index || message_id || timestamp || prev_hash || content_hash)
-	Hash     []byte    `json:"hash"`
+	Hash []byte `json:"hash"`
 	// Ed25519 signature over Hash — proves the server signed it
-	Signature []byte   `json:"signature"`
+	Signature []byte `json:"signature"`
 	// SHA-256 of the message content — content itself is not stored in the chain
 	ContentHash []byte `json:"content_hash"`
 }
@@ -126,13 +126,13 @@ func Verify(entries []*Entry, publicKeyHex string) error {
 	var prevHash []byte
 
 	for i, entry := range entries {
-		// 1. Check index is sequential (no gaps = no deleted entries)
+		// Check index is sequential (no gaps = no deleted entries)
 		if uint64(i) != entry.Index {
 			return fmt.Errorf("%w: index gap at position %d (expected %d, got %d)",
 				ErrChainBroken, i, i, entry.Index)
 		}
 
-		// 2. Check prev_hash links correctly
+		// Check prev_hash links correctly
 		expectedPrev := make([]byte, 32)
 		if i > 0 {
 			expectedPrev = entries[i-1].Hash
@@ -142,13 +142,13 @@ func Verify(entries []*Entry, publicKeyHex string) error {
 		}
 		_ = prevHash
 
-		// 3. Recompute hash and verify it matches
+		// Recompute hash and verify it matches
 		expected := computeHash(entry.Index, entry.MessageID, entry.Timestamp, entry.PrevHash, entry.ContentHash)
 		if !equalBytes(entry.Hash, expected) {
 			return fmt.Errorf("%w: hash mismatch at index %d", ErrChainBroken, i)
 		}
 
-		// 4. Verify Ed25519 signature
+		// Verify Ed25519 signature
 		if !ed25519.Verify(pubKey, entry.Hash, entry.Signature) {
 			return fmt.Errorf("%w: invalid signature at index %d", ErrChainBroken, i)
 		}
@@ -161,6 +161,7 @@ func Verify(entries []*Entry, publicKeyHex string) error {
 
 // VerifyMessage checks that a specific message's content matches its log entry.
 // Returns nil if the content is intact, ErrChainBroken if it was tampered with.
+// This has no uses, and can be deleted. Unless it's supposed to have a use in the future
 func VerifyMessage(content []byte, entry *Entry) error {
 	contentHash := sha256Hash(content)
 	if !equalBytes(contentHash, entry.ContentHash) {

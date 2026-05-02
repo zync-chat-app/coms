@@ -101,13 +101,24 @@ func rotateOnStartup(filename string) error {
 		if err != nil {
 			return
 		}
-		defer src.Close()
+		defer func(src *os.File) {
+			err := src.Close()
+			if err != nil {
+				// Error handling here
+			}
+		}(src)
 		dst, err := os.Create(rotated + ".gz")
 		if err != nil {
 			return
 		}
-		defer dst.Close()
+		defer func(dst *os.File) {
+			err := dst.Close()
+			if err != nil {
+				// And here as well
+			}
+		}(dst)
 		gz := gzip.NewWriter(dst)
+		// These 4 lines below can return errors. For example, when file perms are set to read only
 		io.Copy(gz, src)
 		gz.Close()
 		src.Close()
@@ -160,7 +171,7 @@ func Init(level string, env string, service string) error {
 	return nil
 }
 
-func Named(module string) *zap.Logger { return L.Named(module) }
+func Named(module string) *zap.Logger       { return L.Named(module) }
 func Info(msg string, fields ...zap.Field)  { L.Info(msg, fields...) }
 func Error(msg string, fields ...zap.Field) { L.Error(msg, fields...) }
 func Debug(msg string, fields ...zap.Field) { L.Debug(msg, fields...) }
