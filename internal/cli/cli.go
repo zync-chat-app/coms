@@ -20,18 +20,18 @@ import (
 func HelpMessage(args []string) string {
 	helpString :=
 		`Available commands:
-	help [command] Show this message, or see what a command does
-	envedit        Edit the environment variables
-	envshow        Show some environment variables
-	online         Show number of online clients
-	shutdown       Shutdown the comS server
+	help [command]     Show this message, or see what a command does
+	envedit            Edit the environment variables
+	envshow / envsee   Show some environment variables
+	online             Show number of online clients
+	shutdown           Shutdown the comS server
 `
 
 	if len(args) == 1 {
 		switch args[0] {
 		case "envedit":
 			helpString = "Opens the default editor to edit the .env file. Requires $EDITOR or $VISUAL environment variable to be set, or a supported OS (Linux, macOS, Windows) to launch the editor"
-		case "envshow":
+		case "envshow", "envsee":
 			helpString = "Shows the current environment variables relevant to the comS server, such as server ID, server name, and central URL. Does not show sensitive variables"
 		case "new":
 			helpString = "Creates a new channel. Usage: new <channel_name> [--announcement] [--private]. Example: new \"General Chat\" --announcement"

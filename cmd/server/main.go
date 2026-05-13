@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const version = "0.1.0"
+const version = "0.2.0"
 
 func main() {
 	envFile := flag.String("env", ".env", "Path to environment file")
@@ -36,7 +36,7 @@ func main() {
 	if err != nil {                   // Errors if it's not found or poorly configured
 		fmt.Fprintf(os.Stderr, "Config error: %v\n", err)
 		fmt.Fprintln(os.Stderr, "Please configure the environment variables file and run again")
-		fmt.Fprintln(os.Stderr, "Disregard other errors that may appear.")
+		config.GenerateKeys()                // Generates the keys for the owner to add to the .env file
 		err := cli.OpenFileForEdit(*envFile) // Opens the env file for edition
 		if err != nil {
 			return
@@ -64,6 +64,18 @@ func main() {
 			}
 		}
 	}(logger.L)
+
+	// Useless init message, but cool
+	fmt.Fprintln(os.Stdout, `
+                               ████████
+                              ██░░░░░░ 
+  █████   ██████  ██████████ ░██       
+ ██░░░██ ██░░░░██░░██░░██░░██░█████████
+░██  ░░ ░██   ░██ ░██ ░██ ░██░░░░░░░░██
+░██   ██░██   ░██ ░██ ░██ ░██       ░██
+░░█████ ░░██████  ███ ░██ ░██ ████████ 
+ ░░░░░   ░░░░░░  ░░░  ░░  ░░ ░░░░░░░░  
+`)
 
 	logger.Info("Starting Zync comS Reference",
 		zap.String("server_id", cfg.ServerID),
@@ -209,12 +221,20 @@ func main() {
 	repl.Register("envedit", func(ctx context.Context, args []string) error {
 		return cli.OpenFileForEdit(*envFile) // Opens the env file in the default editor
 	})
-	repl.Register("envshow", func(ctx context.Context, args []string) error {
+	repl.Register("envsee", func(ctx context.Context, args []string) error {
 		// Prints a bunch of useful info about the server
-		fmt.Fprintf(os.Stdout, "Server ID: %s\n"+
+		fmt.Fprintf(os.Stdout, "comS version: %s\n"+"Server ID: %s\n"+
 			"Server Name: %s\n"+"Server's Public Key: %s\n"+
 			"Listening on port %s\n"+"Central URL: %s\n",
-			cfg.ServerID, cfg.ServerName, cfg.Crypto.PublicKeyHex, cfg.Port, cfg.Central.BaseURL)
+			version, cfg.ServerID, cfg.ServerName, cfg.Crypto.PublicKeyHex, cfg.Port, cfg.Central.BaseURL)
+		return nil
+	})
+	repl.Register("envshow", func(ctx context.Context, args []string) error {
+		// Prints a bunch of useful info about the server
+		fmt.Fprintf(os.Stdout, "comS version: %s\n"+"Server ID: %s\n"+
+			"Server Name: %s\n"+"Server's Public Key: %s\n"+
+			"Listening on port %s\n"+"Central URL: %s\n",
+			version, cfg.ServerID, cfg.ServerName, cfg.Crypto.PublicKeyHex, cfg.Port, cfg.Central.BaseURL)
 		return nil
 	})
 	repl.Register("online", func(ctx context.Context, args []string) error {

@@ -24,13 +24,13 @@ This repository shows how to build a comS that is fully compatible with the Zync
 
 ### Standalone executable
 
-**Prerequisite:** A registered server on the Zync Central server.
+**Prerequisite:** A registered server on the Zync Central server. *Optional, but highly recommended*
 
 **Steps to follow**
 1. Download the binary from the [releases](https://github.com/RocketSmash9000/zync-comS/releases/latest) tab for the operating system of choice.
 2. Run the binary on the terminal (`./coms` on Linux or `.\coms` on Windows).
 3. The output on the terminal will contain the public and private keys of the server.
-4. Copy and paste the contents of [`.env.example`](https://github.com/RocketSmash9000/zync-comS/blob/main/.env.example) into the editor that will open.
+4. Copy and paste the contents of [`.env.example`](.env.example) into the editor that will open.
 5. Fill in the variables with the required information
 6. Save and close the editor.
 7. Run the binary again.
@@ -47,18 +47,15 @@ cd coms
 # 2. Install dependencies
 go mod download
 
-# 3. Generate your server keypair
-go run cmd/keygen/main.go
+# 3. Generate needed keys
+go run cmd/server/main.go
+# Copy the generated keys to the .env file that'll open in an editor
 
-# 4. Configure
-cp .env.example .env
-# Edit .env with your SERVER_ID, CENTRAL_API_KEY, and the generated keys
-
-# 5. Run
+# 4. Run
 go run cmd/server/main.go
 ```
 
-Your comS will be available at `http://localhost:3000`.
+Your comS will be available at `http://localhost:3000` or `http://<Your-Machine's-IP>:3000`.
 
 ## Connecting
 
@@ -83,21 +80,21 @@ All WebSocket messages follow this format:
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `t`   | Message type — namespaced dot notation |
-| `id`  | UUIDv7 — used for deduplication |
+| Field | Description                             |
+|-------|-----------------------------------------|
+| `t`   | Message type — namespaced dot notation  |
+| `id`  | UUIDv7 — used for deduplication         |
 | `d`   | Payload — specific to each message type |
-| `ts`  | Unix timestamp in milliseconds |
+| `ts`  | Unix timestamp in milliseconds          |
 
 ## Namespaces
 
-| Namespace | Owner | Description |
-|-----------|-------|-------------|
-| `zync.core.*` | Zync | Core protocol (ping, hello, errors, join/leave) |
-| `zync.channels.*` | Zync | Text channels, history, search |
-| `zync.roles.*` | Zync | Role system *(coming soon)* |
-| `com.*` | Community | Custom extensions |
+| Namespace         | Owner     | Description                                     |
+|-------------------|-----------|-------------------------------------------------|
+| `zync.core.*`     | Zync      | Core protocol (ping, hello, errors, join/leave) |
+| `zync.channels.*` | Zync      | Text channels, history, search                  |
+| `zync.roles.*`    | Zync      | Role system *(coming soon)*                     |
+| `com.*`           | Community | Custom extensions                               |
 
 ## Configuration
 

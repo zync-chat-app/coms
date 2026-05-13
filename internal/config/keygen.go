@@ -1,10 +1,7 @@
-//go:build ignore
-
-// Run with: go run cmd/server/keygen.go
 // Generates an Ed25519 keypair for this comS.
 // Add the output to your .env file.
 
-package main
+package config
 
 import (
 	"crypto/ed25519"
@@ -14,8 +11,7 @@ import (
 	"os"
 )
 
-func main() {
-	fmt.Fprintln(os.Stdout, "🔑 Zync comS Key Generator")
+func GenerateKeys() {
 	fmt.Fprintln(os.Stdout, "──────────────────────────────────")
 	fmt.Fprintln(os.Stdout, "Add the output below to your .env file.")
 	fmt.Fprintln(os.Stdout, "Never commit SERVER_SECRET_KEY to version control.")
@@ -33,5 +29,5 @@ func main() {
 	fmt.Printf("SERVER_PUBLIC_KEY=%s\n", hex.EncodeToString(pub))
 
 	fmt.Println()
-	fmt.Fprintln(os.Stdout, "✅ Done. Keep SERVER_SECRET_KEY secret!")
+	fmt.Fprintln(os.Stdout, "──────────────────────────────────")
 }
